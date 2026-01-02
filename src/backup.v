@@ -1,10 +1,37 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Quick backup functionality with preview mode
+// CRIT-002 fix: Path validation to prevent command injection
 
 module main
 
 import os
 import time
+
+// Shell metacharacters that could enable injection attacks
+const shell_dangerous_chars = [`;`, `|`, `&`, `$`, `\``, `(`, `)`, `{`, `}`, `[`, `]`, `<`, `>`, `\n`, `\r`, `*`, `?`, `~`, `!`, `#`]
+
+// Validate a path is safe for shell interpolation
+// Returns error if path contains dangerous characters
+fn validate_safe_path(path string) !string {
+	if path.len == 0 {
+		return error('Empty path')
+	}
+
+	// Check for shell metacharacters
+	for c in shell_dangerous_chars {
+		if path.contains(c) {
+			return error('Path contains dangerous character: ${c}')
+		}
+	}
+
+	// Check for path traversal attempts beyond expected scope
+	normalized := os.norm_path(path)
+	if normalized.contains('..') && !path.starts_with(os.home_dir()) {
+		return error('Path traversal not allowed outside home directory')
+	}
+
+	return normalized
+}
 
 struct BackupPlan {
 	source_dirs []string
@@ -138,7 +165,14 @@ fn scan_directory(path string, mut plan BackupPlan) {
 
 fn perform_backup(plan BackupPlan, incident Incident, config Config) {
 	timestamp := time.now().custom_format('YYYYMMDD-HHmmss')
-	backup_dir := os.join_path(plan.dest_path, 'emergency-backup-${timestamp}')
+
+	// CRIT-002 fix: Validate destination path before use
+	safe_dest := validate_safe_path(plan.dest_path) or {
+		eprintln('${c_red}[ERROR]${c_reset} Invalid backup destination path: ${err}')
+		return
+	}
+
+	backup_dir := os.join_path(safe_dest, 'emergency-backup-${timestamp}')
 
 	os.mkdir_all(backup_dir) or {
 		eprintln('${c_red}[ERROR]${c_reset} Failed to create backup directory: ${err}')
@@ -153,12 +187,26 @@ fn perform_backup(plan BackupPlan, incident Incident, config Config) {
 			continue
 		}
 
-		dir_name := os.base(dir)
+		// CRIT-002 fix: Validate source path before shell interpolation
+		safe_source := validate_safe_path(dir) or {
+			eprintln('${c_yellow}[WARN]${c_reset} Skipping unsafe path: ${dir}')
+			failed++
+			continue
+		}
+
+		dir_name := os.base(safe_source)
 		dest_dir := os.join_path(backup_dir, dir_name)
 
-		// Use system copy for efficiency
+		// Validate constructed destination path
+		safe_dest_dir := validate_safe_path(dest_dir) or {
+			eprintln('${c_yellow}[WARN]${c_reset} Skipping invalid destination: ${dest_dir}')
+			failed++
+			continue
+		}
+
+		// Use system copy for efficiency - paths are now validated
 		$if windows {
-			result := os.execute('xcopy /E /I /H /Y "${dir}" "${dest_dir}"')
+			result := os.execute('xcopy /E /I /H /Y "${safe_source}" "${safe_dest_dir}"')
 			if result.exit_code == 0 {
 				copied++
 				println('  ${c_green}✓${c_reset} ${dir_name}')
@@ -167,7 +215,7 @@ fn perform_backup(plan BackupPlan, incident Incident, config Config) {
 				println('  ${c_red}✗${c_reset} ${dir_name}')
 			}
 		} $else {
-			result := os.execute('cp -r "${dir}" "${dest_dir}" 2>/dev/null')
+			result := os.execute('cp -r "${safe_source}" "${safe_dest_dir}" 2>/dev/null')
 			if result.exit_code == 0 {
 				copied++
 				println('  ${c_green}✓${c_reset} ${dir_name}')
