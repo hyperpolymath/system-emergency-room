@@ -177,8 +177,11 @@ system-emergency-room --panic
 
 == Implementation approach
 
-* Core: D (fast iteration, strong CLI ergonomics)
+* Core: V language (verification layer — policy + plan + provenance + schema conformance)
 * Optional: Rust helpers for privileged/safety-critical steps (tight boundaries)
+
+NOTE: V was chosen for A&E because panic-safe intake requires *verification* that actions are safe before taking them.
+This aligns with the AmbientOps layer model where V handles "is this allowed / true / safe?" decisions.
 
 == License
 

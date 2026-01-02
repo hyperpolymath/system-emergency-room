@@ -103,7 +103,7 @@ fn write_incident_json(incident Incident, config Config) ! {
 		schema_version: '1.0'
 		id: incident.id
 		created_at: incident.created_at.format_rfc3339()
-		hostname: os.hostname()
+		hostname: os.hostname() or { 'unknown' }
 		username: os.getenv('USER')
 		working_dir: os.getwd()
 		platform: PlatformInfo{
@@ -161,7 +161,7 @@ fn write_receipt(incident Incident, config Config) ! {
 	content << '|${incident.created_at.format_rfc3339()}'
 	content << ''
 	content << '|Hostname'
-	content << '|${os.hostname()}'
+	content << '|${os.hostname() or { 'unknown' }}'
 	content << ''
 	content << '|Platform'
 	content << '|${get_os_name()} (${get_arch()})'

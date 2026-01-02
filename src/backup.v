@@ -9,6 +9,7 @@ import time
 struct BackupPlan {
 	source_dirs []string
 	dest_path   string
+mut:
 	total_files int
 	total_size  i64
 	items       []BackupItem

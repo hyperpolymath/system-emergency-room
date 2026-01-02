@@ -6,7 +6,6 @@ module main
 
 import os
 import flag
-import time
 
 const version = '0.1.0'
 const app_name = 'emergency-button'
@@ -87,7 +86,7 @@ fn run_trigger(args []string) {
 	}
 
 	// Create incident bundle
-	incident := create_incident_bundle(config) or {
+	mut incident := create_incident_bundle(config) or {
 		eprintln('${c_red}[ERROR]${c_reset} Failed to create incident bundle: ${err}')
 		exit(1)
 	}
@@ -97,7 +96,7 @@ fn run_trigger(args []string) {
 
 	// Capture diagnostics
 	println('${c_blue}[INFO]${c_reset} Capturing safe diagnostics...')
-	capture_diagnostics(incident, config)
+	capture_diagnostics(mut incident, config)
 
 	// Write receipt
 	write_receipt(incident, config) or {
