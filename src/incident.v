@@ -9,10 +9,11 @@ import json
 import rand
 
 struct Incident {
-	id         string
-	path       string
-	logs_path  string
-	created_at time.Time
+	id             string
+	correlation_id string  // Unique ID for cross-tool tracing
+	path           string
+	logs_path      string
+	created_at     time.Time
 mut:
 	commands   []CommandLog
 }
@@ -29,6 +30,7 @@ struct CommandLog {
 struct IncidentEnvelope {
 	schema_version string        @[json: 'schema_version']
 	id             string
+	correlation_id string        @[json: 'correlation_id']  // Cross-tool tracing
 	created_at     string        @[json: 'created_at']
 	hostname       string
 	username       string
@@ -60,6 +62,10 @@ fn create_incident_bundle(config Config) !Incident {
 	random_suffix := rand.hex(4)  // 4 random hex chars
 	incident_id := 'incident-${timestamp}-${nanos:09d}-${random_suffix}'
 
+	// COULD-001: Generate correlation ID for cross-tool tracing
+	// Short, human-friendly ID that can be passed between tools
+	correlation_id := 'corr-${rand.hex(8)}'
+
 	// Determine base directory (current working directory)
 	base_dir := os.getwd()
 	incident_path := os.join_path(base_dir, incident_id)
@@ -68,8 +74,10 @@ fn create_incident_bundle(config Config) !Incident {
 	if config.dry_run {
 		println('${c_cyan}[DRY-RUN]${c_reset} Would create: ${incident_path}')
 		println('${c_cyan}[DRY-RUN]${c_reset} Would create: ${logs_path}')
+		println('${c_cyan}[DRY-RUN]${c_reset} Correlation ID: ${correlation_id}')
 		return Incident{
 			id: incident_id
+			correlation_id: correlation_id
 			path: incident_path
 			logs_path: logs_path
 			created_at: now
@@ -90,6 +98,7 @@ fn create_incident_bundle(config Config) !Incident {
 
 	incident := Incident{
 		id: incident_id
+		correlation_id: correlation_id
 		path: incident_path
 		logs_path: logs_path
 		created_at: now
@@ -108,6 +117,7 @@ fn write_incident_json(incident Incident, config Config) ! {
 	envelope := IncidentEnvelope{
 		schema_version: schema_version  // Use constant from utils.v
 		id: incident.id
+		correlation_id: incident.correlation_id  // COULD-001: Cross-tool tracing
 		created_at: incident.created_at.format_rfc3339()
 		hostname: os.hostname() or { 'unknown' }
 		username: os.getenv('USER')

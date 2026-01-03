@@ -93,6 +93,7 @@ fn run_trigger(args []string) {
 	}
 
 	println('${c_green}[OK]${c_reset} Created incident bundle: ${incident.path}')
+	println('${c_blue}[INFO]${c_reset} Correlation ID: ${incident.correlation_id}')
 	println('')
 
 	// Capture diagnostics

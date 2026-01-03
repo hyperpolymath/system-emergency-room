@@ -46,17 +46,18 @@ fn handoff(incident Incident, config Config) {
 	}
 
 	// Try to find specialized tools in order of preference
+	// COULD-001: Pass correlation ID for cross-tool tracing
 	targets := [
 		HandoffTarget{
 			name: 'psa'
 			command: 'psa'
-			args: ['crisis', '--incident', incident.path]
+			args: ['crisis', '--incident', incident.path, '--correlation-id', incident.correlation_id]
 			description: 'Personal Sysadmin crisis mode'
 		},
 		HandoffTarget{
 			name: 'big-up'
 			command: 'big-up'
-			args: ['scan', '--incident', incident.path]
+			args: ['scan', '--incident', incident.path, '--correlation-id', incident.correlation_id]
 			description: 'Advanced diagnostics (non-mutating)'
 		},
 	]

@@ -4,6 +4,7 @@
 module main
 
 import time
+import rand
 
 fn test_incident_envelope_has_required_fields() {
 	envelope := IncidentEnvelope{
@@ -107,6 +108,7 @@ fn test_dry_run_config() {
 fn test_incident_struct_initialization() {
 	incident := Incident{
 		id: 'incident-test'
+		correlation_id: 'corr-test1234'
 		path: '/tmp/incident-test'
 		logs_path: '/tmp/incident-test/logs'
 		created_at: time.now()
@@ -114,7 +116,16 @@ fn test_incident_struct_initialization() {
 	}
 
 	assert incident.id == 'incident-test'
+	assert incident.correlation_id == 'corr-test1234'
 	assert incident.path.contains('incident-test')
 	assert incident.logs_path.contains('logs')
 	assert incident.commands.len == 0
+}
+
+fn test_correlation_id_format() {
+	// Test that correlation IDs start with corr- prefix
+	// Format: 'corr-' (5 chars) + 8 hex chars = 13 chars total
+	corr_id := 'corr-${rand.hex(8)}'
+	assert corr_id.starts_with('corr-')
+	assert corr_id.len == 13  // 'corr-' (5) + 8 hex chars
 }
