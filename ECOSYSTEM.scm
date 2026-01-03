@@ -24,9 +24,9 @@
       (relationship "triggers")
       (description "Emergency room can trigger theatre procedures"))
 
-    (satellite "jusys"
+    (satellite "system-observatory"
       (relationship "feeds")
-      (description "Incident bundles feed into jusys for correlation")))
+      (description "Incident bundles feed into system-observatory for correlation")))
 
   (related-projects
     (project "ambientops"

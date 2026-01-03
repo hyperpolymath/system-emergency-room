@@ -21,7 +21,7 @@
     (role "first-responder")
     (integrates-with
       (complete-internet-repair "network recovery handoff")
-      (jusys "system management after stabilization")
+      (system-observatory "system management after stabilization")
       (big-up "advanced D-based diagnostics")
       (feedback-o-tron "incident reporting")
       (personal-sysadmin "preventive maintenance")))
